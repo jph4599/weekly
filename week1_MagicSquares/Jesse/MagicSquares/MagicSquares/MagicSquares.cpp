@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <iostream>
 using namespace std;
-// Test
+
 /*
 A 3x3 magic square is a 3x3 grid of the numbers 1-9 such that each row, column, and major diagonal adds up to 15. Here's an example:
 8 1 6
@@ -64,20 +64,20 @@ bool FIsMagicSquare( int dim, int* data )
    return fDiagSum == sum && rDiagSum == sum;
 }
 
-void PrintResult( int dim, int* data )
+void PrintResult( int rows, int cols, int* data, const char* title, bool result )
 {
-   cout << "FIsMagicSquare( [ ";
-   for( int row = 0; row < dim; row++ )
+   cout << title << "( [ ";
+   for( int row = 0; row < rows; row++ )
    {
       int rowSum = 0;
-      for( int col = 0; col < dim; col++ )
+      for( int col = 0; col < cols; col++ )
       {
-         cout << setw( 2 ) << data[ row * dim + col ];
-         if( row != col || row != dim - 1 )
+         cout << setw( 2 ) << data[ row * cols + col ];
+         if( row != rows || col != cols - 1 )
             cout << ", ";
       }
    }
-   cout << " ] ) = " << ( FIsMagicSquare( dim, data ) ? "true" : "false" ) << endl;
+   cout << " ] ) = " << ( result ? "true" : "false" ) << endl;
 }
 
 void RunDim3()
@@ -89,7 +89,7 @@ void RunDim3()
                                     { 8, 1, 6, 7, 5, 3, 4, 9, 2 } };
 
    for( auto& testCase : testCases )
-      PrintResult( dim, testCase );
+      PrintResult( dim, dim, testCase, "FIsMagicSquare", FIsMagicSquare( dim, testCase ) );
 }
 
 void RunDim4()
@@ -101,13 +101,96 @@ void RunDim4()
                                     { 12, 8, 9, 7, 13, 1, 11, 2, 3, 10, 5, 16, 15, 6, 4, 14 } };
 
    for( auto& testCase : testCases )
-      PrintResult( dim, testCase );
+      PrintResult( dim, dim, testCase, "FIsMagicSquare", FIsMagicSquare( dim, testCase ) );
+}
+
+static bool FContains( int data[ 6 ], int val )
+{
+   for( int i = 0; i < 6; i++ )
+   {
+      if( data[ i ] == val )
+         return true;
+   }
+   return false;
+}
+
+static bool FCanBeMagicSquare( int partialSquare[ 6 ] )
+{
+   // Find out which numbers are missing
+   int missingNumbersFound = 0;
+   int missingNumbers[ 3 ];
+   for( int i = 1; i <= 9; i++ )
+   {
+      if( !FContains( partialSquare, i ) )
+         missingNumbers[ missingNumbersFound++ ] = i;
+   }
+
+   if( missingNumbersFound != 3 )
+      return false;
+
+   // Create a full square to test with
+   int fullSquare[ 9 ];
+   for( int i = 0; i < 6; i++ )
+      fullSquare[ i ] = partialSquare[ i ];
+
+   int orders[ 6 ][ 3 ] = { { 0, 1, 2 },
+                            { 0, 2, 1 },
+                            { 1, 0, 2 },
+                            { 1, 2, 0 },
+                            { 2, 0, 1 },
+                            { 2, 1, 0 } };
+   for( int i = 0; i < 6; i++ )
+   {
+      fullSquare[ 6 ] = missingNumbers[ orders[ i ][ 0 ] ];
+      fullSquare[ 7 ] = missingNumbers[ orders[ i ][ 1 ] ];
+      fullSquare[ 8 ] = missingNumbers[ orders[ i ][ 2 ] ];
+
+      if( FIsMagicSquare( 3 /*dim*/, fullSquare ) )
+         return true;
+   }
+
+#if 0
+   // Test all possible first values
+   for( int i = 0; i < 3; i++ )
+   {
+      fullSquare[ 6 ] = missingNumbers[ i ];
+
+      // Test all possible second values
+      for( int j = 0; j < 3; j++ )
+      {
+         fullSquare[ 7 ] = missingNumbers[ j ];
+
+         // Test all possible third values
+         for( int k = 0; k < 3; k++ )
+         {
+            fullSquare[ 8 ] = missingNumbers[ k ];
+            if( FIsMagicSquare( 3 /*dim*/, fullSquare ) )
+               return true;
+         }
+      }
+   }
+#endif
+
+   return false;
+}
+
+void RunCanBeMagicSquare3()
+{
+   const int dim = 3;
+   int testCases[][ dim * ( dim - 1 ) ] = { { 8, 1, 6, 3, 5, 7 },
+                                            { 2, 7, 6, 9, 5, 1 },
+                                            { 3, 5, 7, 8, 1, 6 },
+                                            { 8, 1, 6, 7, 5, 3 } };
+
+   for( auto& testCase : testCases )
+      PrintResult( dim, dim - 1, testCase, "FCanBeMagicSquare", FCanBeMagicSquare( testCase ) );
 }
 
 int main()
 {
    RunDim3();
    RunDim4();
+   RunCanBeMagicSquare3();
    cout << "Hit enter to continue";
    cin.get();
 
