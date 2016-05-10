@@ -73,7 +73,7 @@ void PrintResult( int rows, int cols, int* data, const char* title, bool result 
       for( int col = 0; col < cols; col++ )
       {
          cout << setw( 2 ) << data[ row * cols + col ];
-         if( row != rows || col != cols - 1 )
+         if( row != rows - 1 || col != cols - 1 )
             cout << ", ";
       }
    }
@@ -104,6 +104,10 @@ void RunDim4()
       PrintResult( dim, dim, testCase, "FIsMagicSquare", FIsMagicSquare( dim, testCase ) );
 }
 
+// This is much more complicated than it needs to be...
+// This found the missing numbers and tested each permutation in the last row to see
+// if any of them created a magic square.
+#if 0
 static bool FContains( int data[ 6 ], int val )
 {
    for( int i = 0; i < 6; i++ )
@@ -173,6 +177,35 @@ static bool FCanBeMagicSquare( int partialSquare[ 6 ] )
 
    return false;
 }
+#endif
+
+// We know each column should add to [( ( dim * dim + 1 ) * dim ) / 2].
+// We can just calculate the expected values of the last row and then check to see if that creates a Magic Square or not...
+static bool FCanBeMagicSquare( int dim, int* partialSquare )
+{
+   // copy over the initial rows
+   int* fullSquare = new int[ dim * dim ];
+   for( int i = 0; i < dim * ( dim - 1 ); i++ )
+      fullSquare[ i ] = partialSquare[ i ];
+
+   // Set the last row to the expected sum
+   const int sum = ( ( dim * dim + 1 ) * dim ) / 2;
+   for( int i = dim * ( dim - 1 ); i < dim * dim; i++ )
+      fullSquare[ i ] = sum;
+
+   // for each col
+   for( int i = 0; i < dim; i++ )
+   {
+      // Subtract the provided rows to determine the expected values for the last row
+      for( int j = 0; j < dim - 1; j++ )
+         fullSquare[ dim * ( dim - 1 ) + i ] -= fullSquare[ j * dim + i ];
+   }
+
+   bool fIsMagicSquare = FIsMagicSquare( dim, fullSquare );
+
+   delete[] fullSquare;
+   return fIsMagicSquare;
+}
 
 void RunCanBeMagicSquare3()
 {
@@ -183,14 +216,28 @@ void RunCanBeMagicSquare3()
                                             { 8, 1, 6, 7, 5, 3 } };
 
    for( auto& testCase : testCases )
-      PrintResult( dim, dim - 1, testCase, "FCanBeMagicSquare", FCanBeMagicSquare( testCase ) );
+      PrintResult( dim - 1 /*rows*/, dim, testCase, "FCanBeMagicSquare", FCanBeMagicSquare( dim, testCase ) );
 }
+
+void RunCanBeMagicSquare4()
+{
+   const int dim = 4;
+   int testCases[][ dim * ( dim - 1 ) ] = { { 7, 12, 1, 14, 2, 13, 8, 11, 16, 3, 10, 5 },
+                                            { 12, 1, 14, 7, 13, 8, 11, 2, 3, 10, 5, 16 },
+                                            { 14, 1, 13, 7, 12, 8, 11, 3, 2, 9, 5, 16 },
+                                            { 12, 8, 9, 16, 13, 1, 11, 2, 3, 10, 7, 5 } };
+
+   for( auto& testCase : testCases )
+      PrintResult( dim - 1, dim, testCase, "FCanBeMagicSquare", FCanBeMagicSquare( dim, testCase ) );
+}
+
 
 int main()
 {
    RunDim3();
    RunDim4();
    RunCanBeMagicSquare3();
+   RunCanBeMagicSquare4();
    cout << "Hit enter to continue";
    cin.get();
 
